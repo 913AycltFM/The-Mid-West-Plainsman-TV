@@ -8,6 +8,7 @@ on:
     paths:
       - "generate_epg.py"
       - ".github/workflows/update-epg.yml"
+      - "The-Mid-West-Plainsman-TV.m3u"
 
 permissions:
   contents: write
@@ -35,50 +36,93 @@ jobs:
         run: |
           test -s "The-Mid-West-Plainsman-TV.xml"
           test -s "epg.json"
+          test -s "The-Mid-West-Plainsman-TV.m3u"
           python - <<'PY'
           import json
+          import re
           import xml.etree.ElementTree as ET
           from datetime import datetime, timedelta, timezone
 
-          expected = "TheMidWestPlainsman"
-          expected_programmes = 7 * 24
+          CHANNEL_ID = "TheMidWestPlainsman"
+          CHANNEL_NAME = "The Mid West Plainsman"
+          EXPECTED_COUNT = 7 * 24
+          ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
+          LOGO = "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg"
+          STREAM = "https://tv.913aycltfm.com/memfs/552ab1b0-d31a-4a5f-a9d7-d58a280deba2.m3u8"
 
           with open("epg.json", encoding="utf-8") as f:
               data = json.load(f)
-
-          if len(data) != expected_programmes:
-              raise SystemExit(f"Expected {expected_programmes} JSON programmes, got {len(data)}.")
-          if {item.get("channel_id") for item in data} != {expected}:
-              raise SystemExit("EPG JSON contains unexpected channels.")
+          if len(data) != EXPECTED_COUNT:
+              raise SystemExit(f"Expected {EXPECTED_COUNT} JSON programmes, got {len(data)}.")
+          if any(item.get("channel_id") != CHANNEL_ID for item in data):
+              raise SystemExit("EPG JSON contains an unexpected channel.")
 
           root = ET.parse("The-Mid-West-Plainsman-TV.xml").getroot()
-          if root.tag != "tv":
-              raise SystemExit("EPG XML root is not <tv>.")
-          if root.find("channel[@id='" + expected + "']") is None:
-              raise SystemExit("EPG XML channel is missing.")
+          channel = root.find(f"channel[@id='{CHANNEL_ID}']")
+          if root.tag != "tv" or channel is None:
+              raise SystemExit("EPG XML root/channel is invalid.")
+
+          names = [x.text for x in channel.findall("display-name")]
+          if CHANNEL_NAME not in names or "1" not in names:
+              raise SystemExit("EPG XML channel name/number is incorrect.")
+          icon = channel.find("icon")
+          if icon is None or icon.get("src") != ICON:
+              raise SystemExit("EPG XML channel icon is incorrect.")
 
           programmes = root.findall("programme")
-          if len(programmes) != expected_programmes:
-              raise SystemExit(f"Expected {expected_programmes} XML programmes, got {len(programmes)}.")
+          if len(programmes) != EXPECTED_COUNT:
+              raise SystemExit(f"Expected {EXPECTED_COUNT} XML programmes, got {len(programmes)}.")
 
           def parse_xmltv(value):
               stamp, offset = value.strip().rsplit(" ", 1)
+              if not re.fullmatch(r"[+-]\d{4}", offset):
+                  raise SystemExit(f"Invalid XMLTV timezone offset: {offset}")
               sign = 1 if offset[0] == "+" else -1
               minutes = int(offset[1:3]) * 60 + int(offset[3:5])
-              tz = timezone(sign * timedelta(minutes=minutes))
-              return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=tz)
+              return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(
+                  tzinfo=timezone(sign * timedelta(minutes=minutes))
+              )
 
           previous_end = None
-          for index, programme in enumerate(programmes, 1):
-              start_time = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)
-              stop_time = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)
-              if stop_time - start_time != timedelta(hours=1):
+          for index, (programme, item) in enumerate(zip(programmes, data), 1):
+              if programme.get("channel") != CHANNEL_ID:
+                  raise SystemExit(f"Programme {index} has the wrong channel.")
+              xs = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)
+              xe = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)
+              js = datetime.fromisoformat(item["start"]).astimezone(timezone.utc)
+              je = datetime.fromisoformat(item["end"]).astimezone(timezone.utc)
+              if (xs, xe) != (js, je):
+                  raise SystemExit(f"Programme {index} XML/JSON timestamps do not match.")
+              if xe - xs != timedelta(hours=1):
                   raise SystemExit(f"Programme {index} is not exactly one hour.")
-              if previous_end is not None and start_time != previous_end:
+              if previous_end is not None and xs != previous_end:
                   raise SystemExit(f"Gap or overlap before programme {index}.")
-              previous_end = stop_time
+              if programme.findtext("title") != item.get("title"):
+                  raise SystemExit(f"Programme {index} title mismatch.")
+              if programme.findtext("desc") != item.get("description"):
+                  raise SystemExit(f"Programme {index} description mismatch.")
+              picon = programme.find("icon")
+              if picon is None or picon.get("src") != item.get("icon"):
+                  raise SystemExit(f"Programme {index} icon mismatch.")
+              previous_end = xe
 
-          print(f"Validation successful: {len(programmes)} hourly programmes; 1 channel.")
+          with open("The-Mid-West-Plainsman-TV.m3u", encoding="utf-8") as f:
+              m3u = f.read()
+          for required in (
+              f'tvg-id="{CHANNEL_ID}"',
+              f'tvg-name="{CHANNEL_NAME}"',
+              f'tvg-logo="{LOGO}"',
+              f'tvg-background="{ICON}"',
+              'tvg-chno="1"',
+              'group-title="Live"',
+              STREAM,
+          ):
+              if required not in m3u:
+                  raise SystemExit(f"M3U validation failed; missing: {required}")
+          if m3u.count("#EXTINF:") != 1:
+              raise SystemExit("M3U must contain exactly one channel entry.")
+
+          print(f"Validation successful: {EXPECTED_COUNT} hourly programmes; XML, JSON, and M3U are synchronized.")
           PY
       - name: Check for changes
         id: changes
