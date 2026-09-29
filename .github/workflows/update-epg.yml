@@ -31,7 +31,56 @@ jobs:
           python-version: "3.12"
       - name: Generate EPG
         run: python generate_epg.py
-      - name: Validate generated files\n        run: |\n          test -s "The-Mid-West-Plainsman-TV.xml"\n          test -s "epg.json"\n          python - <<'PY'\n          import json\n          import xml.etree.ElementTree as ET\n          from datetime import datetime, timedelta, timezone\n\n          expected = "TheMidWestPlainsman"\n          expected_programmes = 7 * 24\n\n          with open("epg.json", encoding="utf-8") as f:\n              data = json.load(f)\n\n          if len(data) != expected_programmes:\n              raise SystemExit(f"Expected {expected_programmes} JSON programmes, got {len(data)}.")\n          if {item.get("channel_id") for item in data} != {expected}:\n              raise SystemExit("EPG JSON contains unexpected channels.")\n\n          root = ET.parse("The-Mid-West-Plainsman-TV.xml").getroot()\n          if root.tag != "tv":\n              raise SystemExit("EPG XML root is not <tv>.")\n          if root.find("channel[@id='" + expected + "']") is None:\n              raise SystemExit("EPG XML channel is missing.")\n\n          programmes = root.findall("programme")\n          if len(programmes) != expected_programmes:\n              raise SystemExit(f"Expected {expected_programmes} XML programmes, got {len(programmes)}.")\n\n          def parse_xmltv(value):\n              stamp, offset = value.strip().rsplit(" ", 1)\n              sign = 1 if offset[0] == "+" else -1\n              minutes = int(offset[1:3]) * 60 + int(offset[3:5])\n              tz = timezone(sign * timedelta(minutes=minutes))\n              return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=tz)\n\n          previous_end = None\n          for index, programme in enumerate(programmes, 1):\n              start_time = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)\n              stop_time = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)\n              if stop_time - start_time != timedelta(hours=1):\n                  raise SystemExit(f"Programme {index} is not exactly one hour.")\n              if previous_end is not None and start_time != previous_end:\n                  raise SystemExit(f"Gap or overlap before programme {index}.")\n              previous_end = stop_time\n\n          print(f"Validation successful: {len(programmes)} hourly programmes; 1 channel.")\n          PY\n      - name: Check for changes
+      - name: Validate generated files
+        run: |
+          test -s "The-Mid-West-Plainsman-TV.xml"
+          test -s "epg.json"
+          python - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timedelta, timezone
+
+          expected = "TheMidWestPlainsman"
+          expected_programmes = 7 * 24
+
+          with open("epg.json", encoding="utf-8") as f:
+              data = json.load(f)
+
+          if len(data) != expected_programmes:
+              raise SystemExit(f"Expected {expected_programmes} JSON programmes, got {len(data)}.")
+          if {item.get("channel_id") for item in data} != {expected}:
+              raise SystemExit("EPG JSON contains unexpected channels.")
+
+          root = ET.parse("The-Mid-West-Plainsman-TV.xml").getroot()
+          if root.tag != "tv":
+              raise SystemExit("EPG XML root is not <tv>.")
+          if root.find("channel[@id='" + expected + "']") is None:
+              raise SystemExit("EPG XML channel is missing.")
+
+          programmes = root.findall("programme")
+          if len(programmes) != expected_programmes:
+              raise SystemExit(f"Expected {expected_programmes} XML programmes, got {len(programmes)}.")
+
+          def parse_xmltv(value):
+              stamp, offset = value.strip().rsplit(" ", 1)
+              sign = 1 if offset[0] == "+" else -1
+              minutes = int(offset[1:3]) * 60 + int(offset[3:5])
+              tz = timezone(sign * timedelta(minutes=minutes))
+              return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(tzinfo=tz)
+
+          previous_end = None
+          for index, programme in enumerate(programmes, 1):
+              start_time = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)
+              stop_time = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)
+              if stop_time - start_time != timedelta(hours=1):
+                  raise SystemExit(f"Programme {index} is not exactly one hour.")
+              if previous_end is not None and start_time != previous_end:
+                  raise SystemExit(f"Gap or overlap before programme {index}.")
+              previous_end = stop_time
+
+          print(f"Validation successful: {len(programmes)} hourly programmes; 1 channel.")
+          PY
+      - name: Check for changes
         id: changes
         run: |
           if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV.xml" "epg.json")" ]; then
