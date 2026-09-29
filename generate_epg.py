@@ -105,6 +105,44 @@ def generate_json(events):
     )
 
 
+def validate_xml(events):
+    root = ET.parse(XML_OUTPUT).getroot()
+    if root.tag != "tv":
+        raise ValueError("XML root must be <tv>.")
+
+    channel = root.find(f"channel[@id='{CHANNEL_ID}']")
+    if channel is None:
+        raise ValueError(f"Missing XML channel: {CHANNEL_ID}")
+
+    display_names = [node.text for node in channel.findall("display-name")]
+    if CHANNEL_DISPLAY not in display_names or CHANNEL_NAME not in display_names:
+        raise ValueError("XML channel number/name is incorrect.")
+
+    channel_icon = channel.find("icon")
+    if channel_icon is None or channel_icon.get("src") != ICON:
+        raise ValueError("XML channel icon is incorrect.")
+
+    programmes = root.findall("programme")
+    if len(programmes) != len(events):
+        raise ValueError("XML programme count does not match generated events.")
+
+    for index, (programme, event) in enumerate(zip(programmes, events), 1):
+        if programme.get("channel") != CHANNEL_ID:
+            raise ValueError(f"Programme {index} has the wrong channel.")
+        if programme.get("start") != xmltv_datetime(event["start"]) or programme.get("stop") != xmltv_datetime(event["end"]):
+            raise ValueError(f"Programme {index} timestamps do not match generated events.")
+
+        title = programme.find("title")
+        desc = programme.find("desc")
+        icon = programme.find("icon")
+        if title is None or title.text != event["title"]:
+            raise ValueError(f"Programme {index} title does not match.")
+        if desc is None or desc.text != event["description"]:
+            raise ValueError(f"Programme {index} description does not match.")
+        if icon is None or icon.get("src") != event["icon"]:
+            raise ValueError(f"Programme {index} icon does not match.")
+
+
 def validate_hourly(events):
     if len(events) != HOURS_AHEAD:
         raise ValueError(
@@ -136,7 +174,7 @@ def main():
     generate_xml(events)
     generate_json(events)
 
-    ET.parse(XML_OUTPUT)
+    validate_xml(events)
 
     print(
         f"Generated {len(events)} hourly EPG programmes "
