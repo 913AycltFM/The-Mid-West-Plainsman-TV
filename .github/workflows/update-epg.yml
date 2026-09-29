@@ -56,7 +56,7 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet -- "The-Mid-West-Plainsman-TV.xml" "epg.json"; then
+          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV.xml" "epg.json")" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
