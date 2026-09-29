@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from zoneinfo import ZoneInfo
@@ -28,11 +28,14 @@ def xmltv_datetime(dt):
 
 def build_events(start):
     """Create one EPG entry for every hour in the rolling guide."""
+    start_utc = start.astimezone(timezone.utc)
     events = []
 
     for hour in range(HOURS_AHEAD):
-        current = start + timedelta(hours=hour)
-        stop = current + timedelta(hours=1)
+        current_utc = start_utc + timedelta(hours=hour)
+        stop_utc = current_utc + timedelta(hours=1)
+        current = current_utc.astimezone(TIMEZONE)
+        stop = stop_utc.astimezone(TIMEZONE)
 
         events.append(
             {
@@ -79,11 +82,9 @@ def generate_xml(events):
     ET.ElementTree(root).write(path, encoding="utf-8", xml_declaration=True)
 
     xml = path.read_text(encoding="utf-8")
-    xml = xml.replace(
-        '<?xml version="1.0" encoding="utf-8"?>',
-        '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE tv SYSTEM "xmltv.dtd">',
-        1,
-    )
+    if xml.startswith("<?xml"):
+        xml = xml[xml.find("?>") + 2:].lstrip("\n")
+    xml = '<?xml version="1.0" encoding="utf-8"?>\n<!DOCTYPE tv SYSTEM "xmltv.dtd">\n' + xml
     path.write_text(xml, encoding="utf-8")
 
 
@@ -110,12 +111,19 @@ def validate_hourly(events):
             f"Expected {HOURS_AHEAD} hourly programmes, got {len(events)}."
         )
 
-    for event in events:
-        duration = event["end"] - event["start"]
+    for index, event in enumerate(events):
+        duration = event["end"].astimezone(timezone.utc) - event["start"].astimezone(timezone.utc)
         if duration != timedelta(hours=1):
             raise ValueError(
                 f"Non-hourly programme found: {event['start']} - {event['end']}"
             )
+        if index:
+            previous = events[index - 1]
+            gap = event["start"].astimezone(timezone.utc) - previous["end"].astimezone(timezone.utc)
+            if gap != timedelta(0):
+                raise ValueError(
+                    f"EPG gap/overlap found between {previous['end']} and {event['start']}."
+                )
 
 
 def main():
