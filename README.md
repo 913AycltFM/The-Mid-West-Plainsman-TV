@@ -6,7 +6,7 @@ Independent IPTV / Jellyfin / Plex project for **The Mid West Plainsman**.
 
 | Channel | Number | Guide ID |
 |---|---:|---|
-| The Mid West Plainsman | 1.5 | `TheMidWestPlainsman` |
+| The Mid West Plainsman | 1 | `TheMidWestPlainsman` |
 
 ## IPTV playlist
 
