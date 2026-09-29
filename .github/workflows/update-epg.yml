@@ -1,0 +1,76 @@
+name: Update The Mid West Plainsman TV EPG
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "generate_epg.py"
+      - ".github/workflows/update-epg.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-epg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Generate EPG
+        run: python generate_epg.py
+      - name: Validate generated files
+        run: |
+          test -s "The-Mid-West-Plainsman-TV.xml"
+          test -s "epg.json"
+          python - <<'PY'
+          import json
+          import xml.etree.ElementTree as ET
+          expected = "TheMidWestPlainsman"
+          with open("epg.json", encoding="utf-8") as f:
+              data = json.load(f)
+          if not data:
+              raise SystemExit("EPG JSON is empty.")
+          if {item.get("channel_id") for item in data} != {expected}:
+              raise SystemExit("EPG JSON contains unexpected channels.")
+          root = ET.parse("The-Mid-West-Plainsman-TV.xml").getroot()
+          if {item.get("id") for item in root.findall("channel")} != {expected}:
+              raise SystemExit("EPG XML contains unexpected channels.")
+          programmes = root.findall("programme")
+          if not programmes:
+              raise SystemExit("EPG XML contains no programmes.")
+          print(f"Validation successful: {len(programmes)} programmes; 1 channel.")
+          PY
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet -- "The-Mid-West-Plainsman-TV.xml" "epg.json"; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Commit updated EPG
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "The-Mid-West-Plainsman-TV.xml" "epg.json"
+          git commit -m "Update The Mid West Plainsman TV EPG"
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+      - name: No EPG changes
+        if: steps.changes.outputs.changed == 'false'
+        run: echo "No EPG changes detected."
