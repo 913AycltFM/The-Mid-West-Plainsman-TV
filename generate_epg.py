@@ -14,7 +14,7 @@ CHANNEL_NAME = "The Mid West Plainsman"
 DESCRIPTION = "The Mid West Plainsman Is A Media Broadcast Content Creator In Waterloo, Iowa Covering Everything In The Cedar Valley Corridor and Central Iowa"
 ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
 
-XML_OUTPUT = "The-Mid-West-Plainsman-TV.xml"
+XML_OUTPUT = "The-Mid-West-Plainsman-TV-Guide.xml"
 JSON_OUTPUT = "epg.json"
 
 
