@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="Watch The Mid West Plainsman live and browse the TV guide.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icons/app-icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/app-icon.svg">
+<title>The Mid West Plainsman TV</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--panel:#131e31;--panel2:#1b2940;--line:#2c3b53;--text:#f5f7fb;--muted:#a9b8cc;--accent:#f0b429}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1b3150 0,var(--bg) 55%);color:var(--text);font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}header{padding:20px max(18px,env(safe-area-inset-left));display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line);background:#0b1120d9;position:sticky;top:0;z-index:3;backdrop-filter:blur(12px)}.brand-icon{width:52px;height:52px;border-radius:14px}.brand{flex:1}.brand h1{font-size:clamp(1.05rem,3vw,1.45rem);line-height:1.2;margin:0}.brand p{margin:4px 0 0;color:var(--muted);font-size:.85rem}.btn{border:1px solid #465a76;background:var(--panel2);color:var(--text);padding:10px 14px;border-radius:12px;font:inherit;font-weight:650;cursor:pointer}.btn.primary{background:var(--accent);border-color:var(--accent);color:#201700}.wrap{max-width:1050px;margin:auto;padding:24px 16px 50px}.hero{display:grid;grid-template-columns:1.25fr .75fr;gap:20px;align-items:stretch}.card{background:linear-gradient(145deg,#17243a,#101a2b);border:1px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 12px 36px #0002}.section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 0}.section-head h2{font-size:1.1rem;margin:0}.player{padding:16px 20px 20px}.screen{background:#03060b;border-radius:14px;aspect-ratio:16/9;display:grid;place-items:center;overflow:hidden}.screen video{width:100%;height:100%;object-fit:contain;background:#000}.placeholder{text-align:center;padding:20px;color:var(--muted)}.live-dot{display:inline-block;width:8px;height:8px;background:#f34b56;border-radius:50%;margin-right:7px;box-shadow:0 0 10px #f34b5680}.player-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.status{font-size:.86rem;color:var(--muted);margin:10px 0 0}.about{padding:20px;display:flex;flex-direction:column;justify-content:center;min-height:100%}.poster{width:100%;max-height:180px;object-fit:contain;margin-bottom:16px}.about h2{margin:0 0 8px;font-size:1.25rem}.about p{color:var(--muted);margin:0 0 16px}.links{display:flex;flex-wrap:wrap;gap:9px}.links a{color:#f7d477;text-decoration:none;border-bottom:1px solid #f7d47780}.guide{margin-top:22px}.guide-tools{display:flex;gap:10px;flex-wrap:wrap;padding:16px 20px}.guide-tools input,.guide-tools select{background:#0c1524;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit;min-width:0}.guide-tools input{flex:1;min-width:160px}.programs{padding:0 12px 14px;display:grid;gap:8px}.program{display:grid;grid-template-columns:105px 1fr;gap:14px;padding:13px;border:1px solid var(--line);background:#111c2d;border-radius:12px}.time{color:#f4cb65;font-weight:700;font-variant-numeric:tabular-nums}.program h3{font-size:1rem;margin:0 0 3px}.program p{color:var(--muted);margin:0;font-size:.9rem}.empty{color:var(--muted);padding:18px}.foot{text-align:center;color:var(--muted);font-size:.82rem;padding:24px 0 0}.hidden{display:none!important}@media(max-width:720px){header{padding-top:max(14px,env(safe-area-inset-top));gap:10px}.brand-icon{width:44px;height:44px}.install-top{padding:9px 10px}.hero{grid-template-columns:1fr}.about{min-height:0}.poster{max-height:130px;object-position:left}.wrap{padding:16px 12px 36px}.program{grid-template-columns:88px 1fr;padding:11px;gap:10px}.section-head{padding:16px 16px 0}.player{padding:14px 14px 16px}}
+</style>
+</head>
+<body>
+<header><img class="brand-icon" src="./icons/app-icon.svg" alt=""><div class="brand"><h1>The Mid West Plainsman</h1><p>TV • Live and program guide</p></div><button id="installBtn" class="btn primary install-top hidden">Install app</button></header>
+<main class="wrap">
+<div class="hero">
+<section class="card">
+<div class="section-head"><h2><span class="live-dot"></span>Watch Live</h2><span class="status">Channel 1</span></div>
+<div class="player"><div class="screen" id="screen"><video id="video" controls playsinline preload="none" poster="https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg"></video><div id="placeholder" class="placeholder hidden">Your browser cannot play this stream directly.<br>Try opening it in a compatible player.</div></div>
+<div class="player-actions"><button id="playBtn" class="btn primary">Play live TV</button><button id="stopBtn" class="btn">Stop</button><a class="btn" href="https://tv.913aycltfm.com/memfs/552ab1b0-d31a-4a5f-a9d7-d58a280deba2.m3u8" target="_blank" rel="noopener">Open stream</a></div><p id="playerStatus" class="status" role="status">Ready to play The Mid West Plainsman.</p></div>
+</section>
+<aside class="card about"><img class="poster" src="https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg" alt="The Mid West Plainsman logo"><h2>Local stories. Live coverage.</h2><p>The Mid West Plainsman is a media broadcast content creator serving Waterloo, the Cedar Valley Corridor, and Central Iowa.</p><div class="links"><a href="https://mp3tourl.com/" target="_blank" rel="noopener">More from us</a><a href="./The-Mid-West-Plainsman-TV.m3u">TV playlist</a><a href="./The-Mid-West-Plainsman-TV-Guide.xml">TV guide XML</a></div></aside>
+</div>
+<section class="card guide"><div class="section-head"><h2>Program Guide</h2><span id="guideCount" class="status">Loading listings…</span></div><div class="guide-tools"><input id="search" type="search" placeholder="Search programs…" aria-label="Search programs"><select id="day" aria-label="Filter by day"><option value="all">All upcoming listings</option></select><button id="refreshBtn" class="btn">Refresh guide</button></div><div id="programs" class="programs" aria-live="polite"><div class="empty">Loading the latest listings…</div></div></section>
+<div class="foot">© The Mid West Plainsman • TV Guide updates automatically</div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+<script>
+(()=>{'use strict';
+const STREAM='https://tv.913aycltfm.com/memfs/552ab1b0-d31a-4a5f-a9d7-d58a280deba2.m3u8';
+const video=document.querySelector('#video'),status=document.querySelector('#playerStatus'),placeholder=document.querySelector('#placeholder');
+let hls=null,items=[];
+function setStatus(t){status.textContent=t}
+document.querySelector('#playBtn').addEventListener('click',async()=>{
+ placeholder.classList.add('hidden');setStatus('Connecting to the live stream…');
+ try{
+  if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=STREAM}
+  else if(window.Hls&&Hls.isSupported()){if(hls)hls.destroy();hls=new Hls({enableWorker:true});hls.loadSource(STREAM);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,()=>video.play().catch(()=>setStatus('Press play in the video controls to start.')));hls.on(Hls.Events.ERROR,(_,data)=>{if(data.fatal)setStatus('Stream could not be loaded. Check your connection or use Open stream.');});return}
+  else{placeholder.classList.remove('hidden');setStatus('HLS playback is not supported by this browser. Use Open stream.');return}
+  await video.play();setStatus('Now playing The Mid West Plainsman live.')
+ }catch(e){setStatus('Playback did not start. Tap play on the video or use Open stream.')}
+});
+document.querySelector('#stopBtn').addEventListener('click',()=>{video.pause();video.removeAttribute('src');video.load();if(hls){hls.destroy();hls=null}setStatus('Playback stopped.')});
+video.addEventListener('playing',()=>setStatus('Now playing The Mid West Plainsman live.'));
+video.addEventListener('error',()=>{if(video.error)setStatus('The stream could not play in this browser. Try Open stream.')});
+const fmt=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+function render(){
+ const query=document.querySelector('#search').value.trim().toLowerCase(),day=document.querySelector('#day').value,now=Date.now();
+ const future=items.filter(x=>new Date(x.end).getTime()>now);
+ const filtered=future.filter(x=>(!query||((x.title||'')+' '+(x.description||'')).toLowerCase().includes(query))&&(day==='all'||new Date(x.start).toDateString()===day));
+ const container=document.querySelector('#programs');container.replaceChildren();
+ document.querySelector('#guideCount').textContent=future.length+' upcoming listings';
+ if(!filtered.length){container.innerHTML='<div class="empty">No listings match. Try another search or refresh the guide.</div>';return}
+ filtered.slice(0,100).forEach(x=>{const row=document.createElement('article');row.className='program';const t=document.createElement('div');t.className='time';t.textContent=fmt.format(new Date(x.start));const d=document.createElement('div');const h=document.createElement('h3');h.textContent=x.title||'The Mid West Plainsman';const p=document.createElement('p');p.textContent=x.description||'Program information';d.append(h,p);row.append(t,d);container.append(row)});
+}
+async function loadGuide(){const box=document.querySelector('#programs');box.innerHTML='<div class="empty">Loading the latest listings…</div>';try{const response=await fetch('./epg.json?updated='+Math.floor(Date.now()/60000),{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);items=await response.json();const select=document.querySelector('#day');const days=[...new Set(items.map(x=>new Date(x.start).toDateString()))];select.replaceChildren(new Option('All upcoming listings','all'));days.forEach(d=>select.add(new Option(d,d)));render()}catch(e){box.innerHTML='<div class="empty">Could not load the guide. Check your connection and tap Refresh guide.</div>';document.querySelector('#guideCount').textContent='Guide unavailable'}}
+document.querySelector('#search').addEventListener('input',render);document.querySelector('#day').addEventListener('change',render);document.querySelector('#refreshBtn').addEventListener('click',loadGuide);loadGuide();
+let deferredPrompt;const installBtn=document.querySelector('#installBtn');
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;installBtn.classList.remove('hidden')});
+installBtn.addEventListener('click',async()=>{if(!deferredPrompt){alert('On iPhone or iPad, open the Share menu in Safari and choose Add to Home Screen.');return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;installBtn.classList.add('hidden')});
+window.addEventListener('appinstalled',()=>{installBtn.classList.add('hidden');installBtn.textContent='Installed'});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./service-worker.js').catch(()=>{}));
+})();
+</script>
+</body>
+</html>
