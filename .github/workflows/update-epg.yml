@@ -34,7 +34,7 @@ jobs:
         run: python generate_epg.py
       - name: Validate generated files
         run: |
-          test -s "The-Mid-West-Plainsman-TV.xml"
+          test -s "The-Mid-West-Plainsman-TV-Guide.xml"
           test -s "epg.json"
           test -s "The-Mid-West-Plainsman-TV.m3u"
           python - <<'PY'
@@ -57,7 +57,7 @@ jobs:
           if any(item.get("channel_id") != CHANNEL_ID for item in data):
               raise SystemExit("EPG JSON contains an unexpected channel.")
 
-          root = ET.parse("The-Mid-West-Plainsman-TV.xml").getroot()
+          root = ET.parse("The-Mid-West-Plainsman-TV-Guide.xml").getroot()
           channel = root.find(f"channel[@id='{CHANNEL_ID}']")
           if root.tag != "tv" or channel is None:
               raise SystemExit("EPG XML root/channel is invalid.")
@@ -127,7 +127,7 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV.xml" "epg.json")" ]; then
+          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json")" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -137,7 +137,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "The-Mid-West-Plainsman-TV.xml" "epg.json"
+          git add "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
           git commit -m "Update The Mid West Plainsman TV EPG"
           git fetch origin main
           git rebase origin/main
