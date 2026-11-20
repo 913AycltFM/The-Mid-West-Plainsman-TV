@@ -131,7 +131,7 @@ jobs:
           if m3u.count("#EXTINF:") != 1:
               raise SystemExit("M3U must contain exactly one channel entry.")
 
-          print(f"Validation successful: {EXPECTED_COUNT} hourly programmes; XML, JSON, and M3U are synchronized.")
+          print(f"Validation successful: {EXPECTED_COUNT} hourly programmes; XMLTV and M3U are valid.")
           PY
       - name: Check for changes
         id: changes
