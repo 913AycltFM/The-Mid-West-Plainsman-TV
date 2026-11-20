@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import json
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
@@ -25,6 +26,7 @@ BACKGROUND = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-
 STREAM_HOST = "tv.913aycltfm.com"
 
 XML_OUTPUT = Path("The-Mid-West-Plainsman-TV-Guide.xml")
+JSON_OUTPUT = Path("epg.json")
 M3U_INPUT = Path("The-Mid-West-Plainsman-TV.m3u")
 
 
@@ -112,6 +114,73 @@ def generate_xml(events):
     temporary = XML_OUTPUT.with_suffix(XML_OUTPUT.suffix + ".tmp")
     temporary.write_text(document, encoding="utf-8")
     temporary.replace(XML_OUTPUT)
+
+
+
+def generate_json(events):
+    """Write the same seven-day filler guide as a simple JSON feed."""
+    payload = {
+        "generated_at": datetime.now(UTC).astimezone(TIMEZONE).isoformat(),
+        "timezone": "America/Chicago",
+        "channel": {
+            "id": CHANNEL_ID,
+            "number": CHANNEL_DISPLAY,
+            "name": CHANNEL_NAME,
+            "description": DESCRIPTION,
+            "logo": LOGO,
+            "background": BACKGROUND,
+        },
+        "programmes": [
+            {
+                "channel_id": event["channel_id"],
+                "title": event["title"],
+                "description": event["description"],
+                "start": event["start"].astimezone(TIMEZONE).isoformat(),
+                "end": event["end"].astimezone(TIMEZONE).isoformat(),
+                "icon": event["icon"],
+            }
+            for event in events
+        ],
+    }
+
+    temporary = JSON_OUTPUT.with_suffix(JSON_OUTPUT.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\\n",
+        encoding="utf-8",
+    )
+    temporary.replace(JSON_OUTPUT)
+
+
+def validate_json(events):
+    payload = json.loads(JSON_OUTPUT.read_text(encoding="utf-8"))
+    if payload.get("timezone") != "America/Chicago":
+        raise ValueError("JSON EPG timezone is incorrect.")
+
+    channel = payload.get("channel", {})
+    if (
+        channel.get("id") != CHANNEL_ID
+        or channel.get("number") != CHANNEL_DISPLAY
+        or channel.get("name") != CHANNEL_NAME
+        or channel.get("logo") != LOGO
+        or channel.get("background") != BACKGROUND
+    ):
+        raise ValueError("JSON EPG channel metadata is incorrect.")
+
+    programmes = payload.get("programmes")
+    if not isinstance(programmes, list) or len(programmes) != len(events):
+        raise ValueError("JSON EPG programme count is incorrect.")
+
+    for index, (programme, event) in enumerate(zip(programmes, events), 1):
+        expected = {
+            "channel_id": event["channel_id"],
+            "title": event["title"],
+            "description": event["description"],
+            "start": event["start"].astimezone(TIMEZONE).isoformat(),
+            "end": event["end"].astimezone(TIMEZONE).isoformat(),
+            "icon": event["icon"],
+        }
+        if programme != expected:
+            raise ValueError(f"JSON EPG programme {index} is incorrect.")
 
 
 def validate_timeline(events):
@@ -242,7 +311,9 @@ def main():
     validate_timeline(events)
     validate_dst_handling()
     generate_xml(events)
+    generate_json(events)
     validate_xml(events)
+    validate_json(events)
     validate_m3u()
 
     first = events[0]["start"].astimezone(TIMEZONE)
@@ -251,7 +322,7 @@ def main():
         f"Validation successful: {len(events)} continuous hourly programmes "
         f"for {CHANNEL_NAME}; seven-day window {first.isoformat()} to "
         f"{last.isoformat()}; five-minute alignment; Central Time DST; "
-        "XMLTV and M3U valid."
+        "XMLTV, JSON, and M3U valid."
     )
 
 
