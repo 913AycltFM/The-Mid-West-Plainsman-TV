@@ -1,0 +1,78 @@
+name: Pages Build and Deployment
+
+on:
+  # Deploy again after the five-minute EPG workflow finishes. This also works
+  # when that workflow commits files using GITHUB_TOKEN.
+  workflow_run:
+    workflows:
+      - Update The Mid West Plainsman TV Guide
+    types:
+      - completed
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "The-Mid-West-Plainsman-TV.m3u"
+      - "The-Mid-West-Plainsman-TV-Guide.xml"
+      - "epg.json"
+      - ".github/workflows/pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: ${{ github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare IPTV files and artwork
+        run: |
+          set -euo pipefail
+          mkdir -p _site/assets
+
+          cp "The-Mid-West-Plainsman-TV.m3u" _site/
+          cp "The-Mid-West-Plainsman-TV-Guide.xml" _site/
+          cp "epg.json" _site/
+
+          curl --fail --location --retry 3 \
+            "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg" \
+            --output _site/assets/the-mid-west-plainsman-logo.jpg
+
+          curl --fail --location --retry 3 \
+            "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png" \
+            --output _site/assets/the-mid-west-plainsman-background.png
+
+          test -s _site/The-Mid-West-Plainsman-TV.m3u
+          test -s _site/The-Mid-West-Plainsman-TV-Guide.xml
+          test -s _site/epg.json
+          test -s _site/assets/the-mid-west-plainsman-logo.jpg
+          test -s _site/assets/the-mid-west-plainsman-background.png
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
