@@ -48,7 +48,6 @@ jobs:
           EXPECTED_COUNT = 7 * 24
           ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
           LOGO = "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg"
-          STREAM = "https://tv.913aycltfm.com/memfs/552ab1b0-d31a-4a5f-a9d7-d58a280deba2.m3u8"
 
           with open("epg.json", encoding="utf-8") as f:
               data = json.load(f)
@@ -115,10 +114,25 @@ jobs:
               f'tvg-background="{ICON}"',
               'tvg-chno="1"',
               'group-title="Live"',
-              STREAM,
           ):
               if required not in m3u:
                   raise SystemExit(f"M3U validation failed; missing: {required}")
+
+          stream_urls = [
+              line.strip()
+              for line in m3u.splitlines()
+              if line.strip() and not line.lstrip().startswith("#")
+          ]
+          if len(stream_urls) != 1:
+              raise SystemExit(
+                  f"M3U must contain exactly one stream URL, found {len(stream_urls)}."
+              )
+          if not re.fullmatch(
+              r"https://tv\\.913aycltfm\\.com/memfs/[A-Za-z0-9-]+\\.m3u8",
+              stream_urls[0],
+          ):
+              raise SystemExit(f"M3U stream URL is invalid: {stream_urls[0]}")
+
           if m3u.count("#EXTINF:") != 1:
               raise SystemExit("M3U must contain exactly one channel entry.")
 
