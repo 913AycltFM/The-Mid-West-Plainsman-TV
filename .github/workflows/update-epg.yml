@@ -27,7 +27,6 @@ jobs:
     timeout-minutes: 20
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -124,9 +123,6 @@ jobs:
       - name: No EPG changes
         if: steps.changes.outputs.changed == 'false'
         run: echo "No EPG changes detected."
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
