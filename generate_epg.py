@@ -145,7 +145,7 @@ def generate_json(events):
 
     temporary = JSON_OUTPUT.with_suffix(JSON_OUTPUT.suffix + ".tmp")
     temporary.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\\n",
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     temporary.replace(JSON_OUTPUT)
