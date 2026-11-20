@@ -26,6 +26,12 @@ The playlist contains the single live HLS stream and its channel metadata, inclu
 https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/The-Mid-West-Plainsman-TV-Guide.xml
 ```
 
+**JSON EPG URL**
+
+```text
+https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/epg.json
+```
+
 ### Guide details
 
 - One IPTV channel: The Mid West Plainsman (Channel 1).
@@ -34,7 +40,8 @@ https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/mai
 - GitHub Actions runs the generator every five minutes.
 - Time zone: `America/Chicago`, with daylight-saving transitions handled automatically.
 - The channel logo is used for the XMLTV channel icon; the background artwork is used for programme artwork.
-- XMLTV and M3U metadata are validated before the guide can be committed.
+- XMLTV, JSON, and M3U metadata are validated before the guide can be committed.
+- The JSON feed contains the same 168 filler entries, channel metadata, artwork URLs, and ISO 8601 Central Time timestamps as the XMLTV guide.
 
 ## Current schedule behavior
 
@@ -49,7 +56,8 @@ No machine-readable programme schedule or schedule API is configured in this rep
 
 - `The-Mid-West-Plainsman-TV.m3u` — single-channel IPTV playlist.
 - `The-Mid-West-Plainsman-TV-Guide.xml` — generated XMLTV guide.
+- `epg.json` — generated JSON version of the same guide.
 - `generate_epg.py` — Python EPG generator and validation.
 - `.github/workflows/update-epg.yml` — five-minute automated refresh.
 
-This repository is designed for IPTV applications and services such as Jellyfin, Plex, and compatible IPTV players. It does not include a website, web player, PWA, or separate JSON guide.
+This repository is designed for IPTV applications and services such as Jellyfin, Plex, and compatible IPTV players. It does not include a website, web player, or PWA.
