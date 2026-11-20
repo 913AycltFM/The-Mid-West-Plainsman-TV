@@ -2,7 +2,7 @@
 <!DOCTYPE tv SYSTEM "xmltv.dtd">
 <tv generator-info-name="TheMidWestPlainsmanTV" generator-info-url="https://github.com/913AycltFM/The-Mid-West-Plainsman-TV">
   <channel id="TheMidWestPlainsman">
-    <display-name>1</display-name>
+    <display-name>2</display-name>
     <display-name>The Mid West Plainsman</display-name>
     <icon src="https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg" />
   </channel>
