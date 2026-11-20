@@ -45,6 +45,7 @@ jobs:
 
       - name: Show run information
         run: |
+          echo "Project: The Mid West Plainsman TV"
           echo "Event: ${{ github.event_name }}"
           echo "Scheduled expression: ${{ github.event.schedule }}"
           date -u
