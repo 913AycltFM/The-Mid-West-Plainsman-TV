@@ -16,7 +16,7 @@ HOURS_AHEAD = DAYS_AHEAD * 24
 REFRESH_MINUTES = 5
 
 CHANNEL_ID = "TheMidWestPlainsman"
-CHANNEL_DISPLAY = "2"
+CHANNEL_DISPLAY = "1"
 CHANNEL_NAME = "The Mid West Plainsman"
 DESCRIPTION = (
     "The Mid West Plainsman Is A Media Broadcast Content Creator In Waterloo, "
