@@ -1,11 +1,13 @@
-name: Update 91.3 Ayclt FM EPG
+name: Update The Mid West Plainsman TV Guide
 
 on:
   schedule:
-    # Every 5 minutes, offset from the calendar workflow.
+    # Refresh the seven-day IPTV guide every five minutes.
     - cron: "*/5 * * * *"
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - "generate_epg.py"
       - ".github/workflows/update-epg.yml"
@@ -36,13 +38,13 @@ jobs:
       - name: Verify Python environment
         run: python --version
 
-      - name: Show scheduled run information
+      - name: Show run information
         run: |
           echo "Event: ${{ github.event_name }}"
           echo "Scheduled expression: ${{ github.event.schedule }}"
           date -u
 
-      - name: Verify automatic Central Time daylight saving changes
+      - name: Verify Central Time daylight-saving transitions
         run: |
           python - <<'PY'
           from datetime import datetime
@@ -60,160 +62,108 @@ jobs:
               actual = xmltv_datetime(value)
               if actual != expected:
                   raise SystemExit(f"DST check failed: {actual} != {expected}")
-          print("Central Time daylight saving checks passed (CDT/CST).")
+          print("Central Time daylight-saving checks passed (CDT/CST).")
           PY
 
-      - name: Generate EPG
-        env:
-          AZURACAST_API_KEY: ${{ secrets.AZURACAST_API_KEY }}
-          AZURACAST_CA_CERT: ${{ secrets.AZURACAST_CA_CERT }}
+      - name: Generate IPTV EPG
         run: python generate_epg.py
 
-      - name: Check generated EPG files
+      - name: Check generated files
         run: |
-          test -f "91.3_Ayclt_FM_radio_guide.xml"
+          test -f "The-Mid-West-Plainsman-TV-Guide.xml"
           test -f "epg.json"
-          ls -lh "91.3_Ayclt_FM_radio_guide.xml" "epg.json"
+          ls -lh "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
 
-      - name: Validate XML
-        run: |
-          python - <<'PY'
-          import xml.etree.ElementTree as ET
-          filename = "91.3_Ayclt_FM_radio_guide.xml"
-          ET.parse(filename)
-          print(f"XML validation successful: {filename}")
-          PY
-
-      - name: Validate JSON and channel coverage
+      - name: Validate XML, JSON, channel, and programme coverage
         run: |
           python - <<'PY'
           import json
           import xml.etree.ElementTree as ET
 
-          expected = {"913AycltFM", "913AycltFMHD2", "913AycltFMHD3", "913AycltFMHD4", "GamingCentralRadio", "913AycltFMLiveStudioCam", "913AycltFMMobileStudioCam"}
+          channel_id = "TheMidWestPlainsman"
+          expected_programmes = 168
 
-          with open("epg.json", encoding="utf-8") as f:
-              data = json.load(f)
-          if not data:
-              raise SystemExit("EPG JSON is empty.")
+          xml_file = "The-Mid-West-Plainsman-TV-Guide.xml"
+          json_file = "epg.json"
+          playlist_file = "The-Mid-West-Plainsman-TV.m3u"
 
-          json_channels = {item.get("channel_id") for item in data}
-          missing_json = expected - json_channels
-          if missing_json:
-              raise SystemExit(f"EPG JSON is missing channels: {sorted(missing_json)}")
+          root = ET.parse(xml_file).getroot()
+          if root.tag != "tv":
+              raise SystemExit("XMLTV root element must be <tv>.")
 
-          root = ET.parse("91.3_Ayclt_FM_radio_guide.xml").getroot()
-          xml_channels = {channel.get("id") for channel in root.findall("channel")}
-          missing_xml = expected - xml_channels
-          if missing_xml:
-              raise SystemExit(f"EPG XML is missing channels: {sorted(missing_xml)}")
+          xml_channels = root.findall("channel")
+          if len(xml_channels) != 1 or xml_channels[0].get("id") != channel_id:
+              raise SystemExit("XMLTV must contain exactly The Mid West Plainsman channel.")
 
           xml_programmes = root.findall("programme")
-          if not xml_programmes:
-              raise SystemExit("EPG XML contains no programmes.")
-
-          # Keep the M3U tuner channel IDs exactly aligned with XMLTV/JSON.
-          with open("91.3_Ayclt_FM_radio_playlist.m3u", encoding="utf-8") as f:
-              playlist = f.read()
-          if "url-tvg=" in playlist.lower():
-              raise SystemExit("The M3U must not contain url-tvg; configure XMLTV separately.")
-          playlist_channels = set()
-          for line in playlist.splitlines():
-              if line.startswith("#EXTINF:"):
-                  marker = 'tvg-id="'
-                  if marker in line:
-                      playlist_channels.add(line.split(marker, 1)[1].split('"', 1)[0])
-          if playlist_channels != expected:
+          if len(xml_programmes) != expected_programmes:
               raise SystemExit(
-                  "M3U/XMLTV channel IDs do not match. "
-                  f"Missing from M3U: {sorted(expected - playlist_channels)}; "
-                  f"unexpected in M3U: {sorted(playlist_channels - expected)}"
+                  f"Expected {expected_programmes} XMLTV programmes; "
+                  f"found {len(xml_programmes)}."
               )
+          if any(item.get("channel") != channel_id for item in xml_programmes):
+              raise SystemExit("XMLTV contains a programme assigned to an unexpected channel.")
 
-          # A channel can exist in XMLTV but still be filler-only. Report this
-          # separately so an empty AzuraCast schedule cannot pass unnoticed.
-          for channel_id in sorted(expected):
-              channel_items = [item for item in data if item.get("channel_id") == channel_id]
-              scheduled_items = [item for item in channel_items if item.get("fallback") is False]
-              if scheduled_items:
-                  print(f"{channel_id}: {len(scheduled_items)} real scheduled entries.")
-              else:
-                  print(f"WARNING: {channel_id} has no real AzuraCast schedule entries; its guide is filler-only. Publishing the channel with filler programming.")
+          with open(json_file, encoding="utf-8") as file:
+              data = json.load(file)
 
-          def xml_time(value):
-              dt, offset = value.rsplit(" ", 1)
-              sign_char = "+" if offset[0] == "+" else "-"
-              return f"{dt[:4]}-{dt[4:6]}-{dt[6:8]}T{dt[8:10]}:{dt[10:12]}:{dt[12:14]}{sign_char}{offset[1:3]}:{offset[3:5]}"
+          if data.get("timezone") != "America/Chicago":
+              raise SystemExit("JSON EPG timezone must be America/Chicago.")
 
-          live_json = {(item.get("channel_id"), item.get("start"), item.get("end"), item.get("title")) for item in data if item.get("live") is True}
-          live_xml = set()
+          channel = data.get("channel", {})
+          if channel.get("id") != channel_id or channel.get("number") != "1":
+              raise SystemExit("JSON EPG channel metadata is incorrect.")
 
-          for programme in xml_programmes:
-              live_tag = programme.find("live")
-              category = programme.find("category")
-              subtitle = programme.find("sub-title")
-              title = (programme.findtext("title") or "").strip()
-              has_live_metadata = live_tag is not None or category is not None or subtitle is not None
+          programmes = data.get("programmes")
+          if not isinstance(programmes, list) or len(programmes) != expected_programmes:
+              raise SystemExit(
+                  f"Expected {expected_programmes} JSON programmes; "
+                  f"found {len(programmes) if isinstance(programmes, list) else 'invalid data'}."
+              )
+          if any(item.get("channel_id") != channel_id for item in programmes):
+              raise SystemExit("JSON contains a programme assigned to an unexpected channel.")
 
-              if live_tag is not None:
-                  if category is None or (category.text or "").strip().casefold() != "radio show":
-                      raise SystemExit("A <live/> programme is missing category=LIVE.")
-                  if subtitle is None or (subtitle.text or "").strip().upper() != "LIVE":
-                      raise SystemExit("A <live/> programme is missing sub-title=LIVE.")
-                  if title.startswith("[LIVE] "):
-                      raise SystemExit("A LIVE programme still contains the removed [LIVE] title prefix.")
-                  live_xml.add((programme.get("channel"), xml_time(programme.get("start")), xml_time(programme.get("stop")), title))
-              elif has_live_metadata:
-                  raise SystemExit(f"Programme '{title}' has partial LIVE metadata but no <live/> element.")
+          with open(playlist_file, encoding="utf-8-sig") as file:
+              lines = [line.strip() for line in file if line.strip()]
 
-          if live_json != live_xml:
-              only_json = sorted(live_json - live_xml)
-              only_xml = sorted(live_xml - live_json)
-              raise SystemExit("LIVE metadata mismatch between JSON and XML.\n" f"Only in JSON: {only_json[:10]}\n" f"Only in XML: {only_xml[:10]}")
+          if not lines or lines[0] != "#EXTM3U":
+              raise SystemExit("IPTV playlist must begin with #EXTM3U.")
 
-          tracked_channels = {"913AycltFM", "913AycltFMHD2", "913AycltFMHD3", "913AycltFMHD4", "GamingCentralRadio", "913AycltFMLiveStudioCam", "913AycltFMMobileStudioCam"}
-          json_live_by_channel = {channel: 0 for channel in tracked_channels}
-          xml_live_by_channel = {channel: 0 for channel in tracked_channels}
+          entries = [line for line in lines if line.startswith("#EXTINF:")]
+          if len(entries) != 1 or f'tvg-id="{channel_id}"' not in entries[0]:
+              raise SystemExit("M3U must contain exactly the expected Plainsman channel.")
 
-          for item in data:
-              if item.get("channel_id") in tracked_channels and item.get("live") is True:
-                  json_live_by_channel[item["channel_id"]] += 1
-          for programme in xml_programmes:
-              if programme.find("live") is not None and programme.get("channel") in tracked_channels:
-                  xml_live_by_channel[programme.get("channel")] += 1
-
-          if json_live_by_channel != xml_live_by_channel:
-              raise SystemExit("Per-channel LIVE metadata counts do not match: " f"JSON={json_live_by_channel}, XML={xml_live_by_channel}")
-
-          print(f"JSON validation successful: {len(data)} programmes; {len(json_channels)} channels; {len(live_json)} LIVE programmes.")
-          print(f"XML validation successful: {len(xml_programmes)} programmes; {len(xml_channels)} channels; {len(live_xml)} LIVE programmes.")
-          print(f"Per-channel LIVE counts: {json_live_by_channel}")
+          print(
+              f"Validation successful: 1 channel, {len(xml_programmes)} XMLTV "
+              f"programmes, {len(programmes)} JSON programmes, "
+              "America/Chicago timezone, and one M3U channel."
+          )
           PY
 
-      - name: Check for changes
+      - name: Check for generated changes
         id: changes
         run: |
           git status --short
-          if git diff --quiet -- "91.3_Ayclt_FM_radio_guide.xml" "epg.json"; then
+          if git diff --quiet -- "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit updated EPG
+      - name: Commit updated IPTV guide
         if: steps.changes.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "91.3_Ayclt_FM_radio_guide.xml" "epg.json"
-          git commit -m "Update 91.3 Ayclt FM EPG"
+          git add "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
+          git commit -m "Update The Mid West Plainsman IPTV EPG"
 
           for attempt in 1 2 3; do
             git fetch origin main
             if ! git rebase origin/main; then
-              echo "Rebase conflict detected. Preserving the EPG generated by this run."
-              git checkout --theirs -- "91.3_Ayclt_FM_radio_guide.xml" "epg.json"
-              git add "91.3_Ayclt_FM_radio_guide.xml" "epg.json"
+              echo "Rebase conflict detected; keeping the EPG generated by this run."
+              git checkout --theirs -- "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
+              git add "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
               GIT_EDITOR=true git rebase --continue
             fi
             if git push origin HEAD:main; then
