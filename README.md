@@ -23,7 +23,7 @@ The playlist contains the single live HLS stream and its channel metadata, inclu
 **XMLTV URL**
 
 ```text
-https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/The-Mid-West-Plainsman-TV-Guide.xml
+https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/The-Mid-West-Plainsman-TV.xml
 ```
 
 **JSON EPG URL**
@@ -55,7 +55,7 @@ No machine-readable programme schedule or schedule API is configured in this rep
 ## Repository files
 
 - `The-Mid-West-Plainsman-TV.m3u` — single-channel IPTV playlist.
-- `The-Mid-West-Plainsman-TV-Guide.xml` — generated XMLTV guide.
+- `The-Mid-West-Plainsman-TV.xml` — generated XMLTV guide.
 - `epg.json` — generated JSON version of the same guide.
 - `generate_epg.py` — Python EPG generator and validation.
 - `.github/workflows/update-epg.yml` — five-minute automated refresh.
