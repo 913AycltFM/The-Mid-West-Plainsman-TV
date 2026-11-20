@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE tv SYSTEM "xmltv.dtd">
-<tv generator-info-name="TheMidWestPlainsmanTV" generator-info-url="https://github.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide">
+<tv generator-info-name="TheMidWestPlainsmanTV" generator-info-url="https://github.com/913AycltFM/The-Mid-West-Plainsman-TV">
   <channel id="TheMidWestPlainsman">
     <display-name>1</display-name>
     <display-name>The Mid West Plainsman</display-name>
