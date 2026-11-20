@@ -14,143 +14,43 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: update-mid-west-plainsman-epg-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   update-epg:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
-      - name: Checkout repository
+      - name: Check out repository
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Generate EPG
+          cache: "false"
+
+      - name: Generate and validate IPTV files
         run: python generate_epg.py
-      - name: Validate generated files
+
+      - name: Commit updated XMLTV guide
         run: |
-          test -s "The-Mid-West-Plainsman-TV-Guide.xml"
-          test -s "The-Mid-West-Plainsman-TV.m3u"
-          python - <<'PY'
-          import re
-          import xml.etree.ElementTree as ET
-          from datetime import datetime, timedelta, timezone
+          git add "The-Mid-West-Plainsman-TV-Guide.xml"
 
-          CHANNEL_ID = "TheMidWestPlainsman"
-          CHANNEL_NAME = "The Mid West Plainsman"
-          DESCRIPTION = "The Mid West Plainsman Is A Media Broadcast Content Creator In Waterloo, Iowa Covering Everything In The Cedar Valley Corridor and Central Iowa"
-          EXPECTED_COUNT = 7 * 24
-          ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
-          LOGO = "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg"
-
-          root = ET.parse("The-Mid-West-Plainsman-TV-Guide.xml").getroot()
-          channel = root.find(f"channel[@id='{CHANNEL_ID}']")
-          if root.tag != "tv" or channel is None:
-              raise SystemExit("EPG XML root/channel is invalid.")
-
-          names = [x.text for x in channel.findall("display-name")]
-          if CHANNEL_NAME not in names or "1" not in names:
-              raise SystemExit("EPG XML channel name/number is incorrect.")
-          icon = channel.find("icon")
-          if icon is None or icon.get("src") != ICON:
-              raise SystemExit("EPG XML channel icon is incorrect.")
-
-          programmes = root.findall("programme")
-          if len(programmes) != EXPECTED_COUNT:
-              raise SystemExit(f"Expected {EXPECTED_COUNT} XML programmes, got {len(programmes)}.")
-
-          def parse_xmltv(value):
-              stamp, offset = value.strip().rsplit(" ", 1)
-              if not re.fullmatch(r"[+-]\d{4}", offset):
-                  raise SystemExit(f"Invalid XMLTV timezone offset: {offset}")
-              sign = 1 if offset[0] == "+" else -1
-              minutes = int(offset[1:3]) * 60 + int(offset[3:5])
-              return datetime.strptime(stamp, "%Y%m%d%H%M%S").replace(
-                  tzinfo=timezone(sign * timedelta(minutes=minutes))
-              )
-
-          previous_end = None
-          for index, programme in enumerate(programmes, 1):
-              if programme.get("channel") != CHANNEL_ID:
-                  raise SystemExit(f"Programme {index} has the wrong channel.")
-              xs = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)
-              xe = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)
-              if xe - xs != timedelta(hours=1):
-                  raise SystemExit(f"Programme {index} is not exactly one hour.")
-              if previous_end is not None and xs != previous_end:
-                  raise SystemExit(f"Gap or overlap before programme {index}.")
-              if programme.findtext("title") != CHANNEL_NAME:
-                  raise SystemExit(f"Programme {index} title mismatch.")
-              if programme.findtext("desc") != DESCRIPTION:
-                  raise SystemExit(f"Programme {index} description mismatch.")
-              picon = programme.find("icon")
-              if picon is None or picon.get("src") != ICON:
-                  raise SystemExit(f"Programme {index} icon mismatch.")
-              previous_end = xe
-
-          with open("The-Mid-West-Plainsman-TV.m3u", encoding="utf-8") as f:
-              m3u = f.read()
-          for required in (
-              f'tvg-id="{CHANNEL_ID}"',
-              f'tvg-name="{CHANNEL_NAME}"',
-              f'tvg-logo="{LOGO}"',
-              f'tvg-background="{ICON}"',
-              'tvg-chno="1"',
-              'group-title="Live"',
-          ):
-              if required not in m3u:
-                  raise SystemExit(f"M3U validation failed; missing: {required}")
-
-          stream_urls = [
-              line.strip()
-              for line in m3u.splitlines()
-              if line.strip() and not line.lstrip().startswith("#")
-          ]
-          if len(stream_urls) != 1:
-              raise SystemExit(
-                  f"M3U must contain exactly one stream URL, found {len(stream_urls)}."
-              )
-          from urllib.parse import urlsplit
-
-          stream = urlsplit(stream_urls[0])
-          stream_id = stream.path.removeprefix("/memfs/").removesuffix(".m3u8")
-          if (
-              stream.scheme != "https"
-              or stream.netloc != "tv.913aycltfm.com"
-              or not stream.path.startswith("/memfs/")
-              or not stream.path.endswith(".m3u8")
-              or not re.fullmatch(r"[A-Za-z0-9-]+", stream_id)
-          ):
-              raise SystemExit(f"M3U stream URL is invalid: {stream_urls[0]}")
-
-          if m3u.count("#EXTINF:") != 1:
-              raise SystemExit("M3U must contain exactly one channel entry.")
-
-          print(f"Validation successful: {EXPECTED_COUNT} hourly programmes; XMLTV and M3U are valid.")
-          PY
-      - name: Check for changes
-        id: changes
-        run: |
-          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV-Guide.xml")" ]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          if git diff --cached --quiet; then
+            echo "No XMLTV changes detected."
+            exit 0
           fi
-      - name: Commit updated EPG
-        if: steps.changes.outputs.changed == 'true'
-        run: |
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "The-Mid-West-Plainsman-TV-Guide.xml"
           git commit -m "Update The Mid West Plainsman TV EPG"
+
           git fetch origin main
           git rebase origin/main
           git push origin HEAD:main
-      - name: No EPG changes
-        if: steps.changes.outputs.changed == 'false'
-        run: echo "No EPG changes detected."
