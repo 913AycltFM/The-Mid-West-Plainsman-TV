@@ -27,7 +27,7 @@ LOGO = "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378
 BACKGROUND = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
 STREAM_HOST = "tv.913aycltfm.com"
 
-XML_OUTPUT = Path("The-Mid-West-Plainsman-TV-Guide.xml")
+XML_OUTPUT = Path("The-Mid-West-Plainsman-TV.xml")
 JSON_OUTPUT = Path("epg.json")
 M3U_INPUT = Path("The-Mid-West-Plainsman-TV.m3u")
 PAGES_DIR = Path("_site")
@@ -84,7 +84,7 @@ def generate_xml(events):
             "generator-info-name": "TheMidWestPlainsmanTV",
             "generator-info-url": (
                 "https://github.com/913AycltFM/"
-                "The-Mid-West-Plainsman-TV-Guide"
+                "The-Mid-West-Plainsman-TV"
             ),
         },
     )
@@ -314,7 +314,7 @@ def validate_dst_handling():
 
 def download_artwork(url, destination):
     """Download an artwork asset for the static IPTV feed deployment."""
-    request = Request(url, headers={"User-Agent": "TheMidWestPlainsmanTVGuide/1.0"})
+    request = Request(url, headers={"User-Agent": "TheMidWestPlainsmanTV/1.0"})
     with urlopen(request, timeout=30) as response:
         if response.status != 200:
             raise RuntimeError(f"Artwork download failed: HTTP {response.status}")
@@ -356,7 +356,7 @@ def prepare_pages_site():
         if not path.is_file() or path.stat().st_size == 0:
             raise RuntimeError(f"GitHub Pages artifact is missing or empty: {path}")
 
-    print("GitHub Pages artifact prepared (IPTV feeds and artwork only; no HTML).")
+    print("The Mid West Plainsman TV Pages artifact prepared (IPTV feeds and artwork only; no HTML).")
 
 
 def main():
