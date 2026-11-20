@@ -6,7 +6,7 @@ Lightweight, IPTV-only playlist and XMLTV programme guide for **The Mid West Pla
 
 | Channel | Number | XMLTV ID |
 |---|---:|---|
-| The Mid West Plainsman | 2 | `TheMidWestPlainsman` |
+| The Mid West Plainsman | 1 | `TheMidWestPlainsman` |
 
 ## IPTV playlist
 
