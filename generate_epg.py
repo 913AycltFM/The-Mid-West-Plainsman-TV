@@ -16,7 +16,7 @@ HOURS_AHEAD = DAYS_AHEAD * 24
 REFRESH_MINUTES = 5
 
 CHANNEL_ID = "TheMidWestPlainsman"
-CHANNEL_DISPLAY = "1"
+CHANNEL_DISPLAY = "2"
 CHANNEL_NAME = "The Mid West Plainsman"
 DESCRIPTION = (
     "The Mid West Plainsman Is A Media Broadcast Content Creator In Waterloo, "
@@ -275,7 +275,7 @@ def validate_m3u():
         f'tvg-logo="{LOGO}"',
         f'tvg-background="{BACKGROUND}"',
         f'tvg-art="{BACKGROUND}"',
-        'tvg-chno="1"',
+        f'tvg-chno="{CHANNEL_DISPLAY}"',
         'group-title="Live"',
     )
     for item in required_metadata:
