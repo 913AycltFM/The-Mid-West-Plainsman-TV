@@ -14,15 +14,21 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  update-epg:
+  update-and-deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -65,80 +71,19 @@ jobs:
           print("Central Time daylight-saving checks passed (CDT/CST).")
           PY
 
-      - name: Generate IPTV EPG
+      - name: Generate and validate IPTV feeds and Pages files
         run: python generate_epg.py
 
       - name: Check generated files
         run: |
-          test -f "The-Mid-West-Plainsman-TV-Guide.xml"
-          test -f "epg.json"
-          ls -lh "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
-
-      - name: Validate XML, JSON, channel, and programme coverage
-        run: |
-          python - <<'PY'
-          import json
-          import xml.etree.ElementTree as ET
-
-          channel_id = "TheMidWestPlainsman"
-          expected_programmes = 168
-
-          xml_file = "The-Mid-West-Plainsman-TV-Guide.xml"
-          json_file = "epg.json"
-          playlist_file = "The-Mid-West-Plainsman-TV.m3u"
-
-          root = ET.parse(xml_file).getroot()
-          if root.tag != "tv":
-              raise SystemExit("XMLTV root element must be <tv>.")
-
-          xml_channels = root.findall("channel")
-          if len(xml_channels) != 1 or xml_channels[0].get("id") != channel_id:
-              raise SystemExit("XMLTV must contain exactly The Mid West Plainsman channel.")
-
-          xml_programmes = root.findall("programme")
-          if len(xml_programmes) != expected_programmes:
-              raise SystemExit(
-                  f"Expected {expected_programmes} XMLTV programmes; "
-                  f"found {len(xml_programmes)}."
-              )
-          if any(item.get("channel") != channel_id for item in xml_programmes):
-              raise SystemExit("XMLTV contains a programme assigned to an unexpected channel.")
-
-          with open(json_file, encoding="utf-8") as file:
-              data = json.load(file)
-
-          if data.get("timezone") != "America/Chicago":
-              raise SystemExit("JSON EPG timezone must be America/Chicago.")
-
-          channel = data.get("channel", {})
-          if channel.get("id") != channel_id or channel.get("number") != "1":
-              raise SystemExit("JSON EPG channel metadata is incorrect.")
-
-          programmes = data.get("programmes")
-          if not isinstance(programmes, list) or len(programmes) != expected_programmes:
-              raise SystemExit(
-                  f"Expected {expected_programmes} JSON programmes; "
-                  f"found {len(programmes) if isinstance(programmes, list) else 'invalid data'}."
-              )
-          if any(item.get("channel_id") != channel_id for item in programmes):
-              raise SystemExit("JSON contains a programme assigned to an unexpected channel.")
-
-          with open(playlist_file, encoding="utf-8-sig") as file:
-              lines = [line.strip() for line in file if line.strip()]
-
-          if not lines or lines[0] != "#EXTM3U":
-              raise SystemExit("IPTV playlist must begin with #EXTM3U.")
-
-          entries = [line for line in lines if line.startswith("#EXTINF:")]
-          if len(entries) != 1 or f'tvg-id="{channel_id}"' not in entries[0]:
-              raise SystemExit("M3U must contain exactly the expected Plainsman channel.")
-
-          print(
-              f"Validation successful: 1 channel, {len(xml_programmes)} XMLTV "
-              f"programmes, {len(programmes)} JSON programmes, "
-              "America/Chicago timezone, and one M3U channel."
-          )
-          PY
+          test -s "The-Mid-West-Plainsman-TV-Guide.xml"
+          test -s "epg.json"
+          test -s "_site/The-Mid-West-Plainsman-TV.m3u"
+          test -s "_site/The-Mid-West-Plainsman-TV-Guide.xml"
+          test -s "_site/epg.json"
+          test -s "_site/assets/the-mid-west-plainsman-logo.jpg"
+          test -s "_site/assets/the-mid-west-plainsman-background.png"
+          ls -lh "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json" _site _site/assets
 
       - name: Check for generated changes
         id: changes
@@ -179,3 +124,15 @@ jobs:
       - name: No EPG changes
         if: steps.changes.outputs.changed == 'false'
         run: echo "No EPG changes detected."
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
