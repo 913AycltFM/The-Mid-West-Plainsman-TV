@@ -2,7 +2,9 @@ from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
 import re
+import shutil
 from urllib.parse import urlsplit
+from urllib.request import Request, urlopen
 from xml.etree import ElementTree as ET
 from zoneinfo import ZoneInfo
 
@@ -28,6 +30,9 @@ STREAM_HOST = "tv.913aycltfm.com"
 XML_OUTPUT = Path("The-Mid-West-Plainsman-TV-Guide.xml")
 JSON_OUTPUT = Path("epg.json")
 M3U_INPUT = Path("The-Mid-West-Plainsman-TV.m3u")
+PAGES_DIR = Path("_site")
+LOGO_FILE = "the-mid-west-plainsman-logo.jpg"
+BACKGROUND_FILE = "the-mid-west-plainsman-background.png"
 
 
 def xmltv_datetime(value):
@@ -306,6 +311,54 @@ def validate_dst_handling():
         raise ValueError("Central Time fall-back UTC offsets were not distinguished.")
 
 
+
+def download_artwork(url, destination):
+    """Download an artwork asset for the static IPTV feed deployment."""
+    request = Request(url, headers={"User-Agent": "TheMidWestPlainsmanTVGuide/1.0"})
+    with urlopen(request, timeout=30) as response:
+        if response.status != 200:
+            raise RuntimeError(f"Artwork download failed: HTTP {response.status}")
+        data = response.read()
+
+    if not data:
+        raise ValueError(f"Downloaded artwork is empty: {url}")
+
+    destination.write_bytes(data)
+
+
+def prepare_pages_site():
+    """Prepare a static GitHub Pages artifact containing IPTV feeds and artwork.
+
+    No HTML website or player is generated. The root contains only the M3U,
+    XMLTV, and JSON feeds; artwork is stored under assets/.
+    """
+    if PAGES_DIR.exists():
+        shutil.rmtree(PAGES_DIR)
+    assets = PAGES_DIR / "assets"
+    assets.mkdir(parents=True)
+
+    for source in (M3U_INPUT, XML_OUTPUT, JSON_OUTPUT):
+        if not source.is_file():
+            raise FileNotFoundError(f"Required Pages feed is missing: {source}")
+        shutil.copy2(source, PAGES_DIR / source.name)
+
+    download_artwork(LOGO, assets / LOGO_FILE)
+    download_artwork(BACKGROUND, assets / BACKGROUND_FILE)
+
+    expected = (
+        PAGES_DIR / M3U_INPUT.name,
+        PAGES_DIR / XML_OUTPUT.name,
+        PAGES_DIR / JSON_OUTPUT.name,
+        assets / LOGO_FILE,
+        assets / BACKGROUND_FILE,
+    )
+    for path in expected:
+        if not path.is_file() or path.stat().st_size == 0:
+            raise RuntimeError(f"GitHub Pages artifact is missing or empty: {path}")
+
+    print("GitHub Pages artifact prepared (IPTV feeds and artwork only; no HTML).")
+
+
 def main():
     events = build_events(five_minute_start())
     validate_timeline(events)
@@ -315,6 +368,7 @@ def main():
     validate_xml(events)
     validate_json(events)
     validate_m3u()
+    prepare_pages_site()
 
     first = events[0]["start"].astimezone(TIMEZONE)
     last = events[-1]["end"].astimezone(TIMEZONE)
