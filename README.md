@@ -1,4 +1,4 @@
-# The Mid West Plainsman TV Guide
+# The Mid West Plainsman TV
 
 Lightweight, IPTV-only playlist and XMLTV programme guide for **The Mid West Plainsman**.
 
@@ -13,7 +13,7 @@ Lightweight, IPTV-only playlist and XMLTV programme guide for **The Mid West Pla
 **M3U URL**
 
 ```text
-https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/The-Mid-West-Plainsman-TV.m3u
+https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/The-Mid-West-Plainsman-TV.m3u
 ```
 
 The playlist contains the single live HLS stream and its channel metadata, including the channel logo and background artwork.
@@ -23,13 +23,13 @@ The playlist contains the single live HLS stream and its channel metadata, inclu
 **XMLTV URL**
 
 ```text
-https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/The-Mid-West-Plainsman-TV-Guide.xml
+https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/The-Mid-West-Plainsman-TV-Guide.xml
 ```
 
 **JSON EPG URL**
 
 ```text
-https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/epg.json
+https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/epg.json
 ```
 
 ### Guide details
