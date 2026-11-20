@@ -35,26 +35,18 @@ jobs:
       - name: Validate generated files
         run: |
           test -s "The-Mid-West-Plainsman-TV-Guide.xml"
-          test -s "epg.json"
           test -s "The-Mid-West-Plainsman-TV.m3u"
           python - <<'PY'
-          import json
           import re
           import xml.etree.ElementTree as ET
           from datetime import datetime, timedelta, timezone
 
           CHANNEL_ID = "TheMidWestPlainsman"
           CHANNEL_NAME = "The Mid West Plainsman"
+          DESCRIPTION = "The Mid West Plainsman Is A Media Broadcast Content Creator In Waterloo, Iowa Covering Everything In The Cedar Valley Corridor and Central Iowa"
           EXPECTED_COUNT = 7 * 24
           ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
           LOGO = "https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg"
-
-          with open("epg.json", encoding="utf-8") as f:
-              data = json.load(f)
-          if len(data) != EXPECTED_COUNT:
-              raise SystemExit(f"Expected {EXPECTED_COUNT} JSON programmes, got {len(data)}.")
-          if any(item.get("channel_id") != CHANNEL_ID for item in data):
-              raise SystemExit("EPG JSON contains an unexpected channel.")
 
           root = ET.parse("The-Mid-West-Plainsman-TV-Guide.xml").getroot()
           channel = root.find(f"channel[@id='{CHANNEL_ID}']")
@@ -83,25 +75,21 @@ jobs:
               )
 
           previous_end = None
-          for index, (programme, item) in enumerate(zip(programmes, data), 1):
+          for index, programme in enumerate(programmes, 1):
               if programme.get("channel") != CHANNEL_ID:
                   raise SystemExit(f"Programme {index} has the wrong channel.")
               xs = parse_xmltv(programme.attrib["start"]).astimezone(timezone.utc)
               xe = parse_xmltv(programme.attrib["stop"]).astimezone(timezone.utc)
-              js = datetime.fromisoformat(item["start"]).astimezone(timezone.utc)
-              je = datetime.fromisoformat(item["end"]).astimezone(timezone.utc)
-              if (xs, xe) != (js, je):
-                  raise SystemExit(f"Programme {index} XML/JSON timestamps do not match.")
               if xe - xs != timedelta(hours=1):
                   raise SystemExit(f"Programme {index} is not exactly one hour.")
               if previous_end is not None and xs != previous_end:
                   raise SystemExit(f"Gap or overlap before programme {index}.")
-              if programme.findtext("title") != item.get("title"):
+              if programme.findtext("title") != CHANNEL_NAME:
                   raise SystemExit(f"Programme {index} title mismatch.")
-              if programme.findtext("desc") != item.get("description"):
+              if programme.findtext("desc") != DESCRIPTION:
                   raise SystemExit(f"Programme {index} description mismatch.")
               picon = programme.find("icon")
-              if picon is None or picon.get("src") != item.get("icon"):
+              if picon is None or picon.get("src") != ICON:
                   raise SystemExit(f"Programme {index} icon mismatch.")
               previous_end = xe
 
@@ -148,7 +136,7 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json")" ]; then
+          if [ -z "$(git status --porcelain -- "The-Mid-West-Plainsman-TV-Guide.xml")" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -158,7 +146,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "The-Mid-West-Plainsman-TV-Guide.xml" "epg.json"
+          git add "The-Mid-West-Plainsman-TV-Guide.xml"
           git commit -m "Update The Mid West Plainsman TV EPG"
           git fetch origin main
           git rebase origin/main
