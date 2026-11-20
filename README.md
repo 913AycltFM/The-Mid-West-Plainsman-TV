@@ -1,6 +1,6 @@
 # The Mid West Plainsman TV
 
-Independent IPTV / Jellyfin / Plex project for **The Mid West Plainsman**.
+IPTV-only channel and programme guide for **The Mid West Plainsman**.
 
 ## Channel
 
@@ -8,37 +8,31 @@ Independent IPTV / Jellyfin / Plex project for **The Mid West Plainsman**.
 |---|---:|---|
 | The Mid West Plainsman | 1 | `TheMidWestPlainsman` |
 
-## IPTV playlist
+## IPTV files
 
-`The-Mid-West-Plainsman-TV.m3u`
+- `The-Mid-West-Plainsman-TV.m3u` — M3U playlist containing the live HLS stream.
+- `The-Mid-West-Plainsman-TV-Guide.xml` — XMLTV electronic programme guide.
+- `generate_epg.py` — Python generator for the XMLTV guide.
+- `.github/workflows/update-epg.yml` — validates and updates the guide automatically.
 
-XMLTV guide:
-`https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV/main/The-Mid-West-Plainsman-TV.xml`
+## XMLTV guide URL
 
-## Stream
+`https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/The-Mid-West-Plainsman-TV-Guide.xml`
 
-`https://tv.913aycltfm.com/memfs/552ab1b0-d31a-4a5f-a9d7-d58a280deba2.m3u8`
+## M3U playlist URL
 
-## EPG
+`https://raw.githubusercontent.com/913AycltFM/The-Mid-West-Plainsman-TV-Guide/main/The-Mid-West-Plainsman-TV.m3u`
 
-The repository maintains a 7-day rolling XMLTV guide in **America/Chicago**. It currently provides hourly filler entries so IPTV clients always have continuous guide coverage.
+## EPG schedule
 
-## Automatic updates
+- 7-day rolling guide.
+- 168 hourly programme entries.
+- Time zone: `America/Chicago` (Central Time, including daylight saving time).
+- GitHub Actions refreshes the guide every 5 minutes.
 
-GitHub Actions regenerates the guide every **5 minutes**.
-
-Workflow: `.github/workflows/update-epg.yml`
-
-## Files
-
-- `The-Mid-West-Plainsman-TV.m3u` — IPTV playlist
-- `The-Mid-West-Plainsman-TV.xml` — XMLTV guide
-- `epg.json` — JSON guide
-- `generate_epg.py` — EPG generator
-- `.github/workflows/update-epg.yml` — 5-minute updater
+The playlist and XMLTV guide are intended for IPTV applications and services such as Jellyfin, Plex, and compatible IPTV players. This repository does not host a website or web app.
 
 ## Artwork
 
-Logo: https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg
-
-Background: https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png
+- Channel logo: https://mp3tourl.com/images/1790116393287-639eac7e-fc16-40d4-b39c-3f7378f54dc5.jpg
+- Channel background: https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png
