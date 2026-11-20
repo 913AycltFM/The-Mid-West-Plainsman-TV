@@ -127,9 +127,16 @@ jobs:
               raise SystemExit(
                   f"M3U must contain exactly one stream URL, found {len(stream_urls)}."
               )
-          if not re.fullmatch(
-              r"https://tv\\.913aycltfm\\.com/memfs/[A-Za-z0-9-]+\\.m3u8",
-              stream_urls[0],
+          from urllib.parse import urlsplit
+
+          stream = urlsplit(stream_urls[0])
+          stream_id = stream.path.removeprefix("/memfs/").removesuffix(".m3u8")
+          if (
+              stream.scheme != "https"
+              or stream.netloc != "tv.913aycltfm.com"
+              or not stream.path.startswith("/memfs/")
+              or not stream.path.endswith(".m3u8")
+              or not re.fullmatch(r"[A-Za-z0-9-]+", stream_id)
           ):
               raise SystemExit(f"M3U stream URL is invalid: {stream_urls[0]}")
 
