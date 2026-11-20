@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from xml.etree import ElementTree as ET
@@ -15,7 +14,6 @@ DESCRIPTION = "The Mid West Plainsman Is A Media Broadcast Content Creator In Wa
 ICON = "https://mp3tourl.com/images/1790116455920-0030dd1a-85d7-401a-bb1b-8cdb4160da9a.png"
 
 XML_OUTPUT = "The-Mid-West-Plainsman-TV-Guide.xml"
-JSON_OUTPUT = "epg.json"
 
 
 def xmltv_datetime(dt):
@@ -88,22 +86,6 @@ def generate_xml(events):
     path.write_text(xml, encoding="utf-8")
 
 
-def generate_json(events):
-    output = []
-
-    for event in events:
-        item = dict(event)
-        item["start"] = event["start"].isoformat()
-        item["end"] = event["end"].isoformat()
-        item["live_badge"] = ""
-        item["display_title"] = event["title"]
-        output.append(item)
-
-    Path(JSON_OUTPUT).write_text(
-        json.dumps(output, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
-
 
 def validate_xml(events):
     root = ET.parse(XML_OUTPUT).getroot()
@@ -172,7 +154,6 @@ def main():
     validate_hourly(events)
 
     generate_xml(events)
-    generate_json(events)
 
     validate_xml(events)
 
