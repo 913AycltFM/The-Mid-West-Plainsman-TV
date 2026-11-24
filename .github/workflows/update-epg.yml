@@ -12,21 +12,16 @@ on:
       - "generate_epg.py"
       - ".github/workflows/update-epg.yml"
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  update-and-deploy:
+  build-and-upload:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      name: github-pages
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -130,6 +125,18 @@ jobs:
         with:
           path: _site
 
+  
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-upload
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
